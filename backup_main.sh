@@ -195,6 +195,8 @@ function lamp_info() {
 function install_apache() {
 clear 
 
+    echo -e "${green}== Installation d'Apache == ${clear}"
+
 if apt list --installed apache2 2>/dev/null | grep -o apache2 > /dev/null; then
 return
 
@@ -205,9 +207,15 @@ else
             if [[ "$confirm" =~ ^[Oo]$ ]]; then
                 apt update && apt install -y apache2
                 systemctl enable apache2 && systemctl start apache2
-                echo -e "[${green}✔${clear}] Apache a été installé et démarré."
+                if systemctl is-active --quiet apache2; then
+                    echo -e "[${green}✔${clear}] Apache a été installé et démarré."
+                read -p "Appuyez sur Entrée pour continuer..."
+                break 
+                else
+                    echo -e "[${red}!${clear}] Apache a été installé mais n'a pas réussi à démarrer."
                 read -p "Appuyez sur Entrée pour continuer..."
                 break
+                fi
             elif [[ "$confirm" =~ ^[Nn]$ ]]; then
                 echo -e "[${red}!${clear}] Installation d'Apache interrompue. Arrêt du script."
                 exit 1
