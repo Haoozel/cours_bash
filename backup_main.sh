@@ -345,7 +345,7 @@ clear
     done
 #Create new database and user
     
-    echo -e "[${yellow}?${clear}] Voulez-vous créer une nouvelle base de données et un utilisateur ? (O/N)"
+    echo -e "[${yellow}?${clear}] Voulez-vous créer une nouvelle base de données et un utilisateur local ? (O/N)"
     while true; do
         read confirm
     
@@ -365,10 +365,12 @@ clear
             done
 
                 mysql -u root -p"$root_password" -e "CREATE DATABASE $db_name;"
+
             while true; do
-            echo -e "[${yellow}?${clear}] Entrez le nom du nouvel utilisateur :"
+            echo -e "[${yellow}?${clear}] Entrez le nom et mot de passe du nouvel utilisateur local :"
             
-            read db_user
+            read -p "Username : " db_user
+            read -s -p "Password : " db_user_password
             user_exists=$(mysql -u root -p"$root_password" -sN -e "SELECT EXISTS(SELECT 1 FROM mysql.user WHERE user = '$db_user' AND host = 'localhost');")
                 
                 if [[ "$user_exists" -eq 1 ]]; then
@@ -378,7 +380,7 @@ clear
                 fi
             done
 
-                mysql -u root -p"$root_password" -e "CREATE USER '$db_user'@'localhost' IDENTIFIED BY '$db_password';"
+                mysql -u root -p"$root_password" -e "CREATE USER '$db_user'@'localhost' IDENTIFIED BY '$db_user_password';"
                 mysql -u root -p"$root_password" -e "GRANT ALL PRIVILEGES ON $db_name.* TO '$db_user'@'localhost';"
                 mysql -u root -p"$root_password" -e "FLUSH PRIVILEGES;"
             echo -e "[${green}✔${clear}] Base de données '$db_name' et utilisateur '$db_user' créés avec succès."
@@ -400,9 +402,10 @@ function check_mysql_root_password() {
 
     # Attempt to connect to MySQL without a password
     if mysql -u root -e "SELECT 1;" 2>/dev/null; then
+        root_password=""  # Set root password to null for future use
         echo -e "[${green}✔${clear}] Aucun mot de passe root n'est défini pour MySQL."
         read -p "Appuyez sur Entrée pour continuer..."
-        root_password=""  # No password is set
+
     else
         echo -e "[${yellow}!${clear}] Un mot de passe root est défini pour MySQL."
         while true; do
@@ -445,8 +448,8 @@ echo -e "
  -------------------------------------------------
                 (\__/) || 
                 (•ㅅ•) || 
-                / 　 づ
-                
+                / ^ づ
+
           ${blue}TRIPLET Alex - 02/2025${clear}
 
 "
