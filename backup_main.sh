@@ -455,6 +455,7 @@ echo -e "
     echo -e "2) Vérifier si l'utilisateur est présent dans ${blue}/etc/passwd${clear}, et afficher ses groupes"
     echo -e "3) Procéder à la sauvegarde d'un dossier"
     echo -e "4) Installation d'un serveur LAMP"
+    echo -e "5) Configuration de MySQL"
     echo -e "Q) Quitter"
     echo ""
     echo -ne "[${yellow}?${clear}] Choix : "
@@ -473,10 +474,17 @@ echo -e "
         4)
             lamp_install
             ;;
+        5) 
+            conf_mysql
+            ;;
         Q)
             echo -e "[${red}!${clear}] Vous avez quitté le programme."
             exit 0
             ;;
+        q)
+            echo -e "[${red}!${clear}] Vous avez quitté le programme."
+            exit 0
+            ;;        
         *)
             echo -e "[${red}!${clear}] Option invalide, veuillez réessayer."
             ;;
