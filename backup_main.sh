@@ -12,6 +12,33 @@ cyan='\033[0;36m'
 clear='\033[0m'
 ################
 
+################
+# CHECK PREREQUISITES
+
+# >>> Check if script is run a root <<<
+if [[ $EUID -ne 0 ]]; then
+    echo -e "[${red}!${clear}] Ce script doit être exécuté en tant que root. Utilisez ${yellow}sudo${clear} ou connectez-vous en tant que root."
+    exit 1
+fi
+
+# >>> Check if machine can access internet <<<
+function check_internet() {
+    # Ping Google's public DNS server silently
+    if ping -c 1 -W 1 8.8.8.8 &> /dev/null; then
+        return 0  # Internet is available, no output
+    else
+        echo -e "[${red}!${clear}] Aucune connectivité Internet détectée."
+        return 1
+    fi
+}
+
+if ! check_internet; then
+    echo -e "[${red}!${clear}] Ce script nécessite une connexion Internet. Veuillez vérifier votre connexion."
+    exit 1
+fi
+################
+
+
 ################ FONCTIONS ################
 #Fonction pour vérifier sur un utilisateur existe, puis si il est connecté. Puis proposer de tuer ses tâches.
 function check_user_connection_kill() {
