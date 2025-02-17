@@ -238,12 +238,6 @@ else
 
 # >>> Installation du dépôt sury au préalable <<<
 
-# >>> Vérification si le dépôt est déjà installé sur la machine <<< 
-if [ -f /etc/apt/sources.list.d/php.list ] && grep -q "deb \[signed-by=/usr/share/keyrings/deb.sury.org-php.gpg\] https://packages.sury.org/php/ $(lsb_release -sc) main" /etc/apt/sources.list.d/php.list; then
-    echo -e "[${blue}i${clear}] Le dépôt SURY est déjà installé. Passage à l'étape suivante."
-
-# >>> Installation si ce n'est pas le cas <<<
-else
     echo -e "[${blue}i${clear}] Ajout du dépôt SURY en cours... Veuillez patienter."
     apt-get update -qq
     apt-get -y install apt-transport-https lsb-release ca-certificates curl -qq
