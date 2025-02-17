@@ -230,6 +230,8 @@ fi
 function install_php() {
 clear
 
+    echo -e "${green}== Installation de PHP ==${clear}"
+
 if apt list --installed 2>/dev/null | grep -Eo 'php[0-9]+\.[0-9]+' > /dev/null; then
     return
 else
@@ -279,6 +281,8 @@ fi
 function install_mysql() {
 clear
 
+    echo -e "${green}== Installation de MySQL ==${clear}"
+
 if apt list --installed 2>/dev/null | grep -Eo "mariadb-server|mysql-server" > /dev/null; then
     return
 
@@ -302,6 +306,121 @@ else
     done
 fi        
 }
+
+function conf_mysql () {
+
+check_mysql_root_password
+
+clear
+
+    echo -e "${green}== Configuration de MySQL ==${clear}"
+
+# Check if MySQL/MariaDB is installed
+    if ! apt list --installed 2>/dev/null | grep -Eo "mariadb-server|mysql-server" > /dev/null; then
+        echo -e "[${red}!${clear}] MySQL/MariaDB n'est pas installé. Veuillez d'abord installer MySQL/MariaDB."
+        read -p "Appuyez sur Entrée pour retourner au menu..."
+        return
+    fi
+
+# Set or change root password
+
+    echo -e "[${yellow}?${clear}] Voulez-vous définir ou changer le mot de passe root de MySQL/MariaDB ? (O/N)"
+    while true; do
+        read confirm
+        if [[ "$confirm" =~ ^[Oo]$ ]]; then
+        echo -e "[${blue}i${clear}] Entrez le nouveau mot de passe root pour MySQL/MariaDB :"
+        read -s new_root_password
+            mysql -u root -p"$root_password" -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '$new_root_password';"
+            root_password="$new_root_password"
+        echo -e "[${green}✔${clear}] Mot de passe root mis à jour."
+        read -p "Appuyez sur Entrée pour continuer..."
+        break
+        elif [[ "$confirm" =~ ^[Nn]$ ]]; then
+        echo -e "[${blue}i${clear}] Le mot de passe root pour MySQL/MariaDB n'a pas été modifié."
+        break
+        else
+        echo -e "[${red}!${clear}] Réponse invalide. Veuillez saisir O ou N."
+        fi
+    done
+#Create new database and user
+    
+    echo -e "[${yellow}?${clear}] Voulez-vous créer une nouvelle base de données et un utilisateur ? (O/N)"
+    while true; do
+        read confirm
+    
+        if [[ "$confirm" =~ ^[Oo]$ ]]; then
+            while true; do
+            echo -e "[${yellow}?${clear}] Entrez le nom de la nouvelle base de données :"
+            
+                read db_name
+                    if [[ "$db_name" == *.* ]]; then
+                        echo -e "[${red}!${clear}] Le nom de la base de données ne peut pas contenir de point. Veuillez réessayer."
+                    elif mysql -u root -p"$root_password" -e "USE $db_name;" 2>/dev/null; then
+                        echo -e "[${red}!${clear}] La base de données '$db_name' existe déjà."
+                    else
+                        break
+                    fi
+            
+            done
+
+                mysql -u root -p"$root_password" -e "CREATE DATABASE $db_name;"
+            while true; do
+            echo -e "[${yellow}?${clear}] Entrez le nom du nouvel utilisateur :"
+            
+            read db_user
+            user_exists=$(mysql -u root -p"$root_password" -sN -e "SELECT EXISTS(SELECT 1 FROM mysql.user WHERE user = '$db_user' AND host = 'localhost');")
+                
+                if [[ "$user_exists" -eq 1 ]]; then
+                    echo -e "[${red}!${clear}] L'utilisateur '$db_user' existe déjà."
+                else 
+                break
+                fi
+            done
+
+                mysql -u root -p"$root_password" -e "CREATE USER '$db_user'@'localhost' IDENTIFIED BY '$db_password';"
+                mysql -u root -p"$root_password" -e "GRANT ALL PRIVILEGES ON $db_name.* TO '$db_user'@'localhost';"
+                mysql -u root -p"$root_password" -e "FLUSH PRIVILEGES;"
+            echo -e "[${green}✔${clear}] Base de données '$db_name' et utilisateur '$db_user' créés avec succès."
+            echo -e "[${green}✔${clear}] L'utilisateur '$db_user' a tous les privilèges sur la base de données '$db_name'."
+            read -p "Appuyez sur Entrée pour continuer..."
+            break
+        elif [[ "$confirm" =~ ^[Nn]$ ]]; then
+            echo -e "[${red}!${clear}] Création de base de données et utilisateur ignorés."
+            read -p "Appuyez sur Entrée pour retourner au menu..."
+            return
+        else
+        echo -e "[${red}!${clear}] Réponse invalide. Veuillez saisir O ou N."
+        fi
+    done
+}
+
+function check_mysql_root_password() {
+    echo -e "[${blue}i${clear}] Vérification si le mot de passe root est défini pour MySQL..."
+
+    # Attempt to connect to MySQL without a password
+    if mysql -u root -e "SELECT 1;" 2>/dev/null; then
+        echo -e "[${green}✔${clear}] Aucun mot de passe root n'est défini pour MySQL."
+        read -p "Appuyez sur Entrée pour continuer..."
+        root_password=""  # No password is set
+    else
+        echo -e "[${yellow}!${clear}] Un mot de passe root est défini pour MySQL."
+        while true; do
+            echo -e "[${blue}i${clear}] Veuillez entrer le mot de passe root pour MySQL :"
+            read -s root_password
+
+            # Validate the root password by attempting to connect
+            if mysql -u root -p"$root_password" -e "SELECT 1;" 2>/dev/null; then
+                echo -e "[${green}✔${clear}] Mot de passe root valide."
+                read -p "Appuyez sur Entrée pour continuer..."
+                break
+            else
+                echo -e "[${red}!${clear}] Mot de passe root incorrect. Veuillez réessayer."
+            fi
+        done
+    fi
+}
+
+
 ################ FIN FONCTIONS ################
 
 
