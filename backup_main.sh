@@ -237,13 +237,20 @@ if apt list --installed 2>/dev/null | grep -Eo 'php[0-9]+\.[0-9]+' > /dev/null; 
 else
 
 # >>> Installation du dépôt sury au préalable <<<
-    echo -e "${green}== Installation de PHP == ${clear}"
+
+# >>> Vérification si le dépôt est déjà installé sur la machine <<< 
+if [ -f /etc/apt/sources.list.d/php.list ] && grep -q "deb \[signed-by=/usr/share/keyrings/deb.sury.org-php.gpg\] https://packages.sury.org/php/ $(lsb_release -sc) main" /etc/apt/sources.list.d/php.list; then
+    echo -e "[${blue}i${clear}] Le dépôt SURY est déjà installé. Passage à l'étape suivante."
+
+# >>> Installation si ce n'est pas le cas <<<
+else
     echo -e "[${blue}i${clear}] Ajout du dépôt SURY en cours... Veuillez patienter."
-        apt-get update -qq
-        apt-get -y install apt-transport-https lsb-release ca-certificates curl -qq
-        curl -sSLo /usr/share/keyrings/deb.sury.org-php.gpg https://packages.sury.org/php/apt.gpg
-        sh -c 'echo "deb [signed-by=/usr/share/keyrings/deb.sury.org-php.gpg] https://packages.sury.org/php/ $(lsb_release -sc) main" > /etc/apt/sources.list.d/php.list'
-        apt-get update -qq
+    apt-get update -qq
+    apt-get -y install apt-transport-https lsb-release ca-certificates curl -qq
+    curl -sSLo /usr/share/keyrings/deb.sury.org-php.gpg https://packages.sury.org/php/apt.gpg
+    sh -c 'echo "deb [signed-by=/usr/share/keyrings/deb.sury.org-php.gpg] https://packages.sury.org/php/ $(lsb_release -sc) main" > /etc/apt/sources.list.d/php.list'
+    apt-get update -qq
+fi
 
 # >>> Sélection de la version de php + vérification si elle existe <<<
     while true; do
