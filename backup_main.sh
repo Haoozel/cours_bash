@@ -244,7 +244,7 @@ else
     curl -sSLo /usr/share/keyrings/deb.sury.org-php.gpg https://packages.sury.org/php/apt.gpg
     sh -c 'echo "deb [signed-by=/usr/share/keyrings/deb.sury.org-php.gpg] https://packages.sury.org/php/ $(lsb_release -sc) main" > /etc/apt/sources.list.d/php.list'
     apt-get update -qq
-fi
+
 
 # >>> Sélection de la version de php + vérification si elle existe <<<
     while true; do
