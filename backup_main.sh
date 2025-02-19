@@ -130,11 +130,11 @@ while true; do
     if [[ -d "$directory" ]]; then
         tmp_valid=false
         while [[ "$tmp_valid" == false ]]; do
-            echo -e "[${yellow}?${clear}] Vous souhaitez sauvegarder le répertoire ${blue}$directory${clear} Voulez-vous continuer ? (O/N/L (L pour lister son contenu))"
+            echo -e "[${yellow}?${clear}] Vous souhaitez sauvegarder le répertoire ${cyan}$directory${clear} Voulez-vous continuer ? (O/N/L (L pour lister son contenu))"
             read confirm
             
             if [[ "$confirm" =~ ^[Ll]$ ]]; then
-                echo -e "[${blue}i${clear}] Le dossier ${blue}$directory${clear} contient :"
+                echo -e "[${blue}i${clear}] Le dossier ${cyan}$directory${clear} contient :"
                 ls "$directory"
             elif [[ "$confirm" =~ ^[Oo]$ ]]; then
                 tmp_valid=true
@@ -148,7 +148,7 @@ while true; do
         done
 
             tar -czf "$backup_path/$(basename "$directory")_backup_$(date +%Y-%m-%d_%H-%M).tar.gz" "$directory" &>/dev/null
-            echo -e "[${green}✔${clear}] Sauvegarde de ${blue}$directory${clear} effectuée dans ${blue}$backup_path${clear}."
+            echo -e "[${green}✔${clear}] Sauvegarde de ${cyan}$directory${clear} effectuée dans ${cyan}$backup_path${clear}."
             read -p "Appuyez sur Entrée pour continuer..."
             break
         else
@@ -170,21 +170,21 @@ clear
 function lamp_info() {
 #CHECK APACHE
     if apt list --installed apache2 2>/dev/null | grep -o apache2 > /dev/null; then
-        echo -e "[${green}✔${clear}] Apache est déjà installé. ${blue}||${clear} Version : $(apache2 -v | grep 'Server version')"
+        echo -e "[${green}✔${clear}] Apache est déjà installé. ${cyan}||${clear} Version : $(apache2 -v | grep 'Server version')"
     else
         echo -e "[${red}!${clear}] Apache (apache2) n'est pas installé."
     fi
 
 #CHECK PHP - avec regex pour trouver dans les modules 
     if apt list --installed 2>/dev/null | grep -Eo 'php[0-9]+\.[0-9]+' > /dev/null; then
-        echo -e "[${green}✔${clear}] PHP est déjà installé. ${blue}||${clear} Version : $(php -v | head -n 1)"
+        echo -e "[${green}✔${clear}] PHP est déjà installé. ${cyan}||${clear} Version : $(php -v | head -n 1)"
     else
         echo -e "[${red}!${clear}] PHP n'est pas installé."
     fi
 
 #CHECK MYSQL OU MARIADB
     if apt list --installed 2>/dev/null | grep -Eo "mariadb-server|mysql-server" > /dev/null; then
-        echo -e "[${green}✔${clear}] MySQL (MariaDB) est déjà installé. ${blue}||${clear} Version : $(mysql --version)"
+        echo -e "[${green}✔${clear}] MySQL (MariaDB) est déjà installé. ${cyan}||${clear} Version : $(mysql --version)"
     else
         echo -e "[${red}!${clear}] MySQL (MariaDB) n'est pas installé."
     fi
@@ -571,12 +571,12 @@ echo -e "[${blue}!${clear}] Mise à jour des paquets en cours... Veuillez patien
 
 if [[ "$upgrade_error" -eq 1 ]]; then
     log "[INFO] Mise à jour des paquets terminée."
-    echo -e "[${red}!${clear}] La mise à jour s'est terminée avec des erreurs. Consultez le journal ${green}$LOG_FILE${clear} pour le détail."
+    echo -e "[${red}!${clear}] La mise à jour s'est terminée avec des erreurs. Consultez le journal ${cyan}$LOG_FILE${clear} pour le détail."
     read -p "Appuyez sur entrée pour continuer..."
 
 else
     log "[INFO] Mise à jour des paquets terminée."
-    echo -e "[${green}✔${clear}] Mise à jour des paquets terminée."
+    echo -e "[${green}✔${clear}] Mise à jour des paquets terminée. Vous pouvez consulter le journal dans le fichier ${cyan}$LOG_FILE${clear}."
     read -p "Appuyez sur entrée pour continuer..."
 fi
 }
@@ -633,11 +633,11 @@ echo -e "[${blue}!${clear}] Mise à jour du noyau en cours... Veuillez patienter
 
 if [[ "$kernel_upgrade_error" -eq 1 ]]; then
     log "[INFO] Mise à jour des paquets terminée."
-    echo -e "[${red}!${clear}] La mise à jour s'est terminée avec des erreurs. Consultez le journal ${green}$LOG_FILE${clear} pour le détail."
+    echo -e "[${red}!${clear}] La mise à jour s'est terminée avec des erreurs. Consultez le journal ${cyan}$LOG_FILE${clear} pour le détail."
     read -p "Appuyez sur entrée pour continuer..."
 else
     log "[INFO] Mise à jour du noyau terminée."
-    echo -e "[${green}✔${clear}] Mise à jour du noyau terminée."
+    echo -e "[${green}✔${clear}] Mise à jour du noyau terminée. Vous pouvez consulter le journal dans le fichier ${cyan}$LOG_FILE${clear}."
     read -p "Appuyez sur entrée pour continuer..."
 fi
 }
@@ -672,7 +672,7 @@ echo -e "
     echo -e "\n[${yellow}MENU${clear}] Sélectionnez une option :"
     echo ""
     echo -e "1) Vérifier la connexion d'un utilisateur"
-    echo -e "2) Vérifier si l'utilisateur est présent dans ${blue}/etc/passwd${clear}, et afficher ses groupes"
+    echo -e "2) Vérifier si l'utilisateur est présent dans ${cyan}/etc/passwd${clear}, et afficher ses groupes"
     echo -e "3) Procéder à la sauvegarde d'un dossier"
     echo -e "4) Installation d'un serveur LAMP"
     echo -e "5) Configuration de MySQL"
