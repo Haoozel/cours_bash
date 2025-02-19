@@ -331,7 +331,11 @@ clear
         if [[ "$confirm" =~ ^[Oo]$ ]]; then
         echo -e "[${blue}i${clear}] Entrez le nouveau mot de passe root pour MySQL/MariaDB :"
         read -s new_root_password
+            if [[ -z "$root_password" ]]; then
+            mysql -u root -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '$new_root_password';"
+            else
             mysql -u root -p"$root_password" -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '$new_root_password';"
+            fi
             root_password="$new_root_password"
         echo -e "[${green}✔${clear}] Mot de passe root mis à jour."
         read -p "Appuyez sur Entrée pour continuer..."
@@ -428,7 +432,7 @@ function check_mysql_root_password() {
     echo -e "[${blue}i${clear}] Vérification si le mot de passe root est défini pour MySQL..."
 
     # Attempt to connect to MySQL without a password
-    if mysql -u root -e "SELECT 1;" 2>/dev/null; then
+    if mysql -u root -sN -e "SELECT 1;" 2>/dev/null; then
         root_password=""  # Set root password to null for future use
         echo -e "[${green}✔${clear}] Aucun mot de passe root n'est défini pour MySQL."
         read -p "Appuyez sur Entrée pour continuer..."
