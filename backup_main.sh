@@ -455,7 +455,192 @@ function check_mysql_root_password() {
     fi
 }
 
+function system_update_upgrade() {
 
+
+#>>> Configuration du logging <<<
+LOG_FILE="/var/log/system_upgrade_from_script.log"
+log() {
+    TIMESTAMP="$(date +"%Y-%m-%d %H:%M:%S")"
+    MESSAGE="$1"
+    echo "[$TIMESTAMP] $MESSAGE" >> "$LOG_FILE"
+}
+
+clear
+
+echo -e "${green}== Mise à jour système ==${clear}"
+
+    distro_info || return 1
+    check_kernel_update
+    packages_upgrade || return 1
+    kernel_upgrade || return 1
+
+}
+
+# Détection de la distribution
+distro_info() {
+    if [[ -f /etc/debian_version ]]; then
+        distro="debian"
+    elif [[ -f /etc/redhat-release ]]; then
+        distro="rhel"
+    elif [[ -f /etc/arch-release ]]; then
+        distro="arch"
+    else
+        log "[ERROR] Distribution non prise en charge."
+        echo -e "[${red}!${clear}] Distribution non prise en charge."
+        read -p "Appuyez sur Entrée pour continuer..."
+        return 1
+    fi
+    log "[INFO] Distribution détectée : $distro"
+    echo -e "[${blue}i${clear}] Distribution détectée : $distro"
+    echo -e ""
+}
+
+
+check_kernel_update() {
+    current_kernel=$(uname -r)
+    available_kernel=""
+
+    case "$distro" in
+        "debian")
+            available_kernel=$(apt list --upgradable 2>/dev/null | grep "linux-image-generic" | awk '{print $2}')
+            ;;
+        "rhel")
+            available_kernel=$(yum list kernel --updates | awk 'NR>1 {print $2}' | head -n 1)
+            ;;
+        "arch")
+            available_kernel=$(pacman -Qu | grep "^linux " | awk '{print $2}')
+            ;;
+    esac
+
+    if [[ -z "$available_kernel" ]]; then
+        kernel_upgrade_available=0
+        log "[INFO] Le noyau est déjà à jour ($current_kernel)."
+        echo -e "[${blue}i${clear}] Le noyau est déjà à jour ($current_kernel)."
+        read -p "Appyez sur entrée pour continuer..."
+    else
+        kernel_upgrade_available=1
+        log "[INFO] Une mise à jour du noyau est disponible : $available_kernel"
+        echo -e "[${blue}i${clear}] Une mise à jour du noyau est disponible : $available_kernel"
+        read -p "Appyez sur entrée pour continuer..."
+    fi
+}
+
+packages_upgrade() {
+
+clear
+
+echo -e "${green}== Mise à jour des paquets ==${clear}"
+
+echo -e "[${yellow}?${clear}] Voulez-vous mettre à jour les paquets pour $distro (O/N)"
+    while true; do
+        read confirm
+            if [[ "$confirm" =~ ^[Oo]$ ]]; then
+            break
+            elif [[ "$confirm" =~ ^[Nn]$ ]]; then
+                echo -e "[${red}!${clear}] Mise à jour des paquets annulée"
+                read -p "Appuyez sur Entrée pour retourner au menu..."
+                return 1
+            else echo -e "[${red}!${clear}] Réponse invalide. Veuillez saisir O ou N."
+            fi
+    done
+
+log "[INFO] Mise à jour des paquets pour $distro..."
+echo -e "[${blue}!${clear}] Mise à jour des paquets en cours... Veuillez patienter."
+
+    case "$distro" in
+        "debian")
+            apt update -y >> "$LOG_FILE" 2>&1 || upgrade_error=1
+            apt upgrade -y >> "$LOG_FILE" 2>&1 || upgrade_error=1
+            apt dist-upgrade -y >> "$LOG_FILE" 2>&1 || upgrade_error=1
+            apt autoremove -y >> "$LOG_FILE" 2>&1
+            apt clean >> "$LOG_FILE" 2>&1
+            ;;
+        "rhel")
+            yum update -y >> "$LOG_FILE" 2>&1 || upgrade_error=1
+            yum autoremove -y >> "$LOG_FILE" 2>&1 || upgrade_error=1
+            yum clean all >> "$LOG_FILE" 2>&1
+            ;;
+        "arch")
+            pacman -Syu --noconfirm >> "$LOG_FILE" 2>&1 || upgrade_error=1
+            pacman -Scc --noconfirm >> "$LOG_FILE" 2>&1
+            ;;
+        *)
+            ;;
+    esac
+
+if [[ "$upgrade_error" -eq 1 ]]; then
+    log "[INFO] Mise à jour des paquets terminée."
+    echo -e "[${red}!${clear}] La mise à jour s'est terminée avec des erreurs. Consultez le journal ${green}$LOG_FILE${clear} pour le détail."
+    read -p "Appuyez sur entrée pour continuer..."
+
+else
+    log "[INFO] Mise à jour des paquets terminée."
+    echo -e "[${green}✔${clear}] Mise à jour des paquets terminée."
+    read -p "Appuyez sur entrée pour continuer..."
+fi
+}
+
+function kernel_upgrade() {
+clear
+echo -e "${green}== Mise à jour du noyau ==${clear}"
+
+    if [[ "$kernel_upgrade_available" -eq 1 ]]; then
+        echo -e "[${blue}i${clear}] Une mise à jour du noyau est disponible."
+        echo ""
+        
+        echo -e  "Voulez-vous mettre à jour le noyau maintenant ? (O/N)"
+           while true; do
+                read confirm
+                if [[ "$confirm" =~ ^[Oo]$ ]]; then
+                    break
+                elif [[ "$confirm" =~ ^[Nn]$ ]]; then
+                    echo -e "[${red}!${clear}] Mise à jour du noyau annulée."
+                    read -p "Appuyez sur Entrée pour retourner au menu..."
+                    return 1
+                else echo -e "[${red}!${clear}] Réponse invalide. Veuillez saisir O ou N."
+                fi
+            done
+
+    else
+        log "[INFO] Le noyau est déjà à jour, aucune action requise."
+        echo -e "[${blue}i${clear}] Le noyau est déjà à jour, aucune action requise."
+        read -p "Appuyez sur Entrée pour retourner au menu..."
+        return 1
+    fi
+
+
+log "[INFO] Mise à jour du noyau pour $distro..."
+echo -e "[${blue}!${clear}] Mise à jour du noyau en cours... Veuillez patienter."
+
+    case "$distro" in
+        "debian")
+            apt install -y linux-image-generic >> "$LOG_FILE" 2>&1 || kernel_upgrade_error=1
+            update-initramfs -u >> "$LOG_FILE" 2>&1
+            update-grub >> "$LOG_FILE" 2>&1
+            ;;
+        "rhel")
+            yum install -y kernel >> "$LOG_FILE" 2>&1 || kernel_upgrade_error=1
+            grub2-mkconfig -o /boot/grub2/grub.cfg >> "$LOG_FILE" 2>&1
+            ;;
+        "arch")
+            pacman -S --noconfirm linux >> "$LOG_FILE" 2>&1  || kernel_upgrade_error=1
+            mkinitcpio -P >> "$LOG_FILE" 2>&1
+            ;;
+        *)
+            ;;
+    esac
+
+if [[ "$kernel_upgrade_error" -eq 1 ]]; then
+    log "[INFO] Mise à jour des paquets terminée."
+    echo -e "[${red}!${clear}] La mise à jour s'est terminée avec des erreurs. Consultez le journal ${green}$LOG_FILE${clear} pour le détail."
+    read -p "Appuyez sur entrée pour continuer..."
+else
+    log "[INFO] Mise à jour du noyau terminée."
+    echo -e "[${green}✔${clear}] Mise à jour du noyau terminée."
+    read -p "Appuyez sur entrée pour continuer..."
+fi
+}
 ################ FIN FONCTIONS ################
 
 
@@ -491,6 +676,7 @@ echo -e "
     echo -e "3) Procéder à la sauvegarde d'un dossier"
     echo -e "4) Installation d'un serveur LAMP"
     echo -e "5) Configuration de MySQL"
+    echo -e "6) Mise à jour du système"
     echo -e "Q) Quitter"
     echo ""
     echo -ne "[${yellow}?${clear}] Choix : "
@@ -511,6 +697,9 @@ echo -e "
             ;;
         5) 
             conf_mysql
+            ;;
+        6)
+            system_update_upgrade
             ;;
         Q)
             echo -e "[${red}!${clear}] Vous avez quitté le programme."
