@@ -380,9 +380,17 @@ clear
                 fi
             done
 
+
+            if [[ -z "$root_password" ]]; then
+                mysql -u root -e "CREATE USER '$db_user'@'localhost' IDENTIFIED BY '$db_user_password';"
+                mysql -u root -e "GRANT ALL PRIVILEGES ON $db_name.* TO '$db_user'@'localhost';"
+                mysql -u root -e "FLUSH PRIVILEGES;"
+            else
                 mysql -u root -p"$root_password" -e "CREATE USER '$db_user'@'localhost' IDENTIFIED BY '$db_user_password';"
                 mysql -u root -p"$root_password" -e "GRANT ALL PRIVILEGES ON $db_name.* TO '$db_user'@'localhost';"
                 mysql -u root -p"$root_password" -e "FLUSH PRIVILEGES;"
+            fi
+
             echo -e "[${green}✔${clear}] Base de données '$db_name' et utilisateur '$db_user' créés avec succès."
             echo -e "[${green}✔${clear}] L'utilisateur '$db_user' a tous les privilèges sur la base de données '$db_name'."
             read -p "Appuyez sur Entrée pour continuer..."
