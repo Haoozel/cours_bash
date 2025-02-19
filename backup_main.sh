@@ -356,22 +356,41 @@ clear
                 read db_name
                     if [[ "$db_name" == *.* ]]; then
                         echo -e "[${red}!${clear}] Le nom de la base de données ne peut pas contenir de point. Veuillez réessayer."
-                    elif mysql -u root -p"$root_password" -e "USE $db_name;" 2>/dev/null; then
+                    
+                    else
+                    if [[ -z "$root_password" ]]; then
+                        mysql -u root -e "USE $db_name;" 2>/dev/null
+                    else
+                        mysql -u root -p"$root_password" -e "USE $db_name;" 2>/dev/null
+                    fi
+
+                    # Check the result of the mysql command
+                    if [[ $? -eq 0 ]]; then
                         echo -e "[${red}!${clear}] La base de données '$db_name' existe déjà."
                     else
                         break
                     fi
+                fi
+    
             
             done
 
+            if [[ -z "$root_password" ]]; then
+                mysql -u root -e "CREATE DATABASE $db_name;"
+            else
                 mysql -u root -p"$root_password" -e "CREATE DATABASE $db_name;"
-
+            fi
+            
             while true; do
             echo -e "[${yellow}?${clear}] Entrez le nom et mot de passe du nouvel utilisateur local :"
             
             read -p "Username : " db_user
             read -s -p "Password : " db_user_password
-            user_exists=$(mysql -u root -p"$root_password" -sN -e "SELECT EXISTS(SELECT 1 FROM mysql.user WHERE user = '$db_user' AND host = 'localhost');")
+                if [[ -z "$root_password" ]]; then
+                    user_exists=$(mysql -u root -sN -e "SELECT EXISTS(SELECT 1 FROM mysql.user WHERE user = '$db_user' AND host = 'localhost');")
+                else
+                    user_exists=$(mysql -u root -p"$root_password" -sN -e "SELECT EXISTS(SELECT 1 FROM mysql.user WHERE user = '$db_user' AND host = 'localhost');")
+                fi
                 
                 if [[ "$user_exists" -eq 1 ]]; then
                     echo -e "[${red}!${clear}] L'utilisateur '$db_user' existe déjà."
