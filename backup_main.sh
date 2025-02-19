@@ -13,19 +13,19 @@ clear='\033[0m'
 ################
 
 ################
-# CHECK PREREQUISITES
+# VERIFICATION DES PREREQUIS
 
-# >>> Check if script is run a root <<<
+# >>> Vérifier si le script est exéctué en tant que root <<<
 if [[ $EUID -ne 0 ]]; then
     echo -e "[${red}!${clear}] Ce script doit être exécuté en tant que root. Utilisez ${yellow}sudo${clear} ou connectez-vous en tant que root."
     exit 1
 fi
 
-# >>> Check if machine can access internet <<<
+# >>> Vérifier si la machine accède à internet <<<
 function check_internet() {
-    # Ping Google's public DNS server silently
+    # Ping des serveurs de google
     if ping -c 1 -W 1 8.8.8.8 &> /dev/null; then
-        return 0  # Internet is available, no output
+        return 0  # Si internet dispo, pas de sortie
     else
         echo -e "[${red}!${clear}] Aucune connectivité Internet détectée."
         return 1
@@ -40,6 +40,8 @@ fi
 
 
 ################ FONCTIONS ################
+
+# > FONCTION CHECK_USER_CONNECTION - OPTION 1 DU MENU <
 #Fonction pour vérifier sur un utilisateur existe, puis si il est connecté. Puis proposer de tuer ses tâches.
 function check_user_connection_kill() {
 
@@ -73,6 +75,7 @@ if who | grep -wq "$login"; then
         read -p "Appuyez sur Entrée pour continuer..."
     else 
 
+    # Boucle dans la boucle pour éviter les erreurs de saise (force O ou N)
     while true; do
     echo -e "[${yellow}?${clear}] Voulez-vous tuer toutes les tâches de $login ? (O/N)"
         read confirm
@@ -83,6 +86,7 @@ if who | grep -wq "$login"; then
         fi
     done
 
+    #Pourrait faire plus simple avec un elif comme plus loin dans le script mais flemme de changer
     if [[ "$confirm" =~ ^[Oo]$ ]]; then
             pkill -u "$login"
             echo -e "[${green}✔${clear}] Tous les processus de $login ont été arrêtés."
@@ -99,6 +103,7 @@ else
 fi
 }
 
+# > FONCTION CHECK_USER - OPTION 2 DU MENU <
 #Fonction pour vérifier si un utilisateur est présent dans le fichier /etc/passwd, puis afficher ses groupes
 function check_user_in_passwd() {
 clear
@@ -117,8 +122,9 @@ clear
     fi
 }
 
+# > FONCTION BACKUP - OPTION 3 DU MENU < 
 function backup_folder() {
-## Déclaration et création de l'emplacement de sauvegarde au cas où il n'existe pas déjà
+## Déclaration et création silentieuse de l'emplacement de sauvegarde au cas où il n'existe pas déjà
 backup_path="/home/save"
 mkdir -p "$backup_path" &>/dev/null
 ##
@@ -126,13 +132,15 @@ clear
 while true; do
     echo -e "[${yellow}?${clear}] Entrez le chemin du répertoire à sauvegarder : "
     read -e directory
+
 # Vérifier si le répertoire existe
     if [[ -d "$directory" ]]; then
         tmp_valid=false
         while [[ "$tmp_valid" == false ]]; do
             echo -e "[${yellow}?${clear}] Vous souhaitez sauvegarder le répertoire ${cyan}$directory${clear} Voulez-vous continuer ? (O/N/L (L pour lister son contenu))"
             read confirm
-            
+
+            #Listing du contenu si L saisi
             if [[ "$confirm" =~ ^[Ll]$ ]]; then
                 echo -e "[${blue}i${clear}] Le dossier ${cyan}$directory${clear} contient :"
                 ls "$directory"
@@ -146,7 +154,7 @@ while true; do
                 echo -e "[${blue}i${clear}] Réponse invalide. Veuillez entrer O, N ou L."
             fi
         done
-
+        # Création de l'archive et verbose
             tar -czf "$backup_path/$(basename "$directory")_backup_$(date +%Y-%m-%d_%H-%M).tar.gz" "$directory" &>/dev/null
             echo -e "[${green}✔${clear}] Sauvegarde de ${cyan}$directory${clear} effectuée dans ${cyan}$backup_path${clear}."
             read -p "Appuyez sur Entrée pour continuer..."
@@ -157,6 +165,10 @@ while true; do
 done
 }
 
+# > FONCTION LAMP_INSTALL - OPTION 4 DU MENU <
+
+#Appel de fonctions centralisé pour lisibilité
+# Lorsque l'installation d'un composant est refusée, arrêt du script pour éviter l'installation des autres si l'utilisateur refuse.
 function lamp_install() {
 clear
     lamp_info
@@ -166,7 +178,7 @@ clear
     
 }
 
-# >>> FONCTIONS POUR SERVEUR LAMP <<<
+# >>>>>>>>> FONCTIONS POUR SERVEUR LAMP <<<<<<<<<<
 function lamp_info() {
 #CHECK APACHE
     if apt list --installed apache2 2>/dev/null | grep -o apache2 > /dev/null; then
@@ -196,7 +208,7 @@ function install_apache() {
 clear 
 
     echo -e "${green}== Installation d'Apache == ${clear}"
-
+# revérification qu'Apache soit pas installé
 if apt list --installed apache2 2>/dev/null | grep -o apache2 > /dev/null; then
 return
 
@@ -211,6 +223,7 @@ else
                     echo -e "[${green}✔${clear}] Apache a été installé et démarré."
                 read -p "Appuyez sur Entrée pour continuer..."
                 break 
+                # Dans le cas où Apache a déjà été installé puis supprimé, il est possible qu'il n'arrive pas à démarrer, d'où la vérif supplémentaire
                 else
                     echo -e "[${red}!${clear}] Apache a été installé mais n'a pas réussi à démarrer."
                 read -p "Appuyez sur Entrée pour continuer..."
@@ -231,13 +244,13 @@ function install_php() {
 clear
 
     echo -e "${green}== Installation de PHP ==${clear}"
-
+# revérification que PHP ne soit pas installé
 if apt list --installed 2>/dev/null | grep -Eo 'php[0-9]+\.[0-9]+' > /dev/null; then
     return
 else
 
 # >>> Installation du dépôt sury au préalable <<<
-
+# Installation laissée à chaque exécution pour rafraîchir les keyrings.
     echo -e "[${blue}i${clear}] Ajout du dépôt SURY en cours... Veuillez patienter."
     apt-get update -qq
     apt-get -y install apt-transport-https lsb-release ca-certificates curl -qq
@@ -252,6 +265,7 @@ else
         read php_version
         php_package="php$php_version"
 
+            # Utilisation du la commande apt-cache pour vérifier que la version spécifiée soit bien disponible sur les repo APT
             if apt-cache show $php_package &>/dev/null; then
                 break
             else
@@ -265,6 +279,7 @@ else
         echo -e "[${yellow}?${clear}] Confirmez-vous l'installation de PHP $php_version. Voulez-vous l'installer ? (O/N)"
         read confirm
             if [[ "$confirm" =~ ^[Oo]$ ]]; then
+                #Installation des paquets libapache sinon erreur de dépendances par la suite pour le fonctionnement de LAMP
                 apt update && apt install -y $php_package libapache2-mod-php$php_version php$php_version-mysql
                 echo -e "[${green}✔${clear}] PHP $php_version a été installé."
                 read -p "Appuyez sur Entrée pour continuer..."
@@ -283,7 +298,7 @@ function install_mysql() {
 clear
 
     echo -e "${green}== Installation de MySQL ==${clear}"
-
+# revérification que MySQL ou Mariadb ne soit pas installé
 if apt list --installed 2>/dev/null | grep -Eo "mariadb-server|mysql-server" > /dev/null; then
     return
 
@@ -307,23 +322,28 @@ else
     done
 fi        
 }
+# >>>>>>>>> FIN FONCTIONS POUR SERVEUR LAMP <<<<<<<<<<
 
+
+# >>>>>>>>> FONCTIONS POUR CONF MYSQL - ETAPE 5 DU MENU <<<<<<<<<<
+# Toutes les commandes d'exécution sont en doublon en vérifiant si le root password est nul ou pas
+# Permet d'exécuter sans l'opérateur -p quand il est vide, afin d'éviter la verbose de MySQL dans le script.
 function conf_mysql () {
 
 check_mysql_root_password
 
 clear
 
-    echo -e "${green}== Configuration de MySQL ==${clear}"
+echo -e "${green}== Configuration de MySQL ==${clear}"
 
-# Check if MySQL/MariaDB is installed
+# Revérification que MySQL soit bien installé
     if ! apt list --installed 2>/dev/null | grep -Eo "mariadb-server|mysql-server" > /dev/null; then
         echo -e "[${red}!${clear}] MySQL/MariaDB n'est pas installé. Veuillez d'abord installer MySQL/MariaDB."
         read -p "Appuyez sur Entrée pour retourner au menu..."
         return
     fi
 
-# Set or change root password
+# Requête pour changement du mot de passe root
 
     echo -e "[${yellow}?${clear}] Voulez-vous définir ou changer le mot de passe root de MySQL/MariaDB ? (O/N)"
     while true; do
@@ -331,6 +351,7 @@ clear
         if [[ "$confirm" =~ ^[Oo]$ ]]; then
         echo -e "[${blue}i${clear}] Entrez le nouveau mot de passe root pour MySQL/MariaDB :"
         read -s new_root_password
+            # Comme indiqué en commentaire plus haut, vérification si le mdp root est vide ou non. Puis commande différente en conséquence.
             if [[ -z "$root_password" ]]; then
             mysql -u root -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '$new_root_password';"
             else
@@ -342,12 +363,13 @@ clear
         break
         elif [[ "$confirm" =~ ^[Nn]$ ]]; then
         echo -e "[${blue}i${clear}] Le mot de passe root pour MySQL/MariaDB n'a pas été modifié."
-        break
+        break #Ajout d'un break pour continuer, pas obligé de changer le mdp root
         else
         echo -e "[${red}!${clear}] Réponse invalide. Veuillez saisir O ou N."
         fi
     done
-#Create new database and user
+
+# Création de nouvel utilisateur et nouvelle base de données. 
     
     echo -e "[${yellow}?${clear}] Voulez-vous créer une nouvelle base de données et un utilisateur local ? (O/N)"
     while true; do
@@ -455,6 +477,10 @@ function check_mysql_root_password() {
     fi
 }
 
+# >>>>>>>>> FIN FONCTIONS POUR CONF MYSQL <<<<<<<<<<
+
+
+# >>>>>>>>> FONCTIONS POUR SYSTEM UPGRADE - ETAPE 6 DU MENU <<<<<<<<<<
 function system_update_upgrade() {
 
 
