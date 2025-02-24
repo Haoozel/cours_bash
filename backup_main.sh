@@ -538,15 +538,16 @@ function distro_info() {
     echo -e ""
 
  if [[ "$distro" == "debian" ]]; then
-        latest_version=$(curl -s https://www.debian.org/releases/latest | grep -oP 'Debian\s+\K\d+' | head -1)
+        latest_version=$(curl -s https://www.debian.org/releases/stable/ | grep -oP 'Debian\s+\K\d+' | head -1)
             # Récupération de la version installée via lsb_release
             installed_version=$(lsb_release -r | awk '{print $2}')
-            echo "[${blue}i${clear}] Dernière version stable : Debian $latest_version"
-            echo "[${blue}i${clear}] Version actuelle installée : Debian $installed_version"
+            echo -e "[${blue}i${clear}] Dernière version stable : Debian $latest_version"
+            echo -e "[${blue}i${clear}] Version actuelle installée : Debian $installed_version"
             if [[ "$installed_version" != "$latest_version" ]]; then
-                echo -e "[${yellow}!${clear}] La version actuelle diffère de la dernière version stable. Veuillez mettre à jour les dépôts, puis relancer ce script pour mettre à jour le système."
+                echo -e "[${yellow}!${clear}] La version actuelle diffère de la dernière version stable. Veuillez mettre à jour les dépôts sous ${cyan}/etc/apt/sources.list${clear}, puis relancer ce script pour mettre à jour le système. ${red}!!${clear} Action à effectuer en connaissance de cause. Cela pourrait cause des dysfonctionnements sévères du système."
             else
                 echo -e ""
+            fi
             fi
 }
 
@@ -557,6 +558,7 @@ function check_kernel_update() {
 
     case "$distro" in
         "debian")
+            apt update
             available_kernel=$(apt list --upgradable 2>/dev/null | grep "linux-image-generic" | awk '{print $2}')
             ;;
         "rhel")
