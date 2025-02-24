@@ -173,8 +173,8 @@ function lamp_install() {
 clear
     lamp_info
     install_apache
-    install_php
-    install_mysql
+    install_php || return 1
+    install_mysql || return 1
     
 }
 
@@ -276,23 +276,28 @@ else
 
 # >>> Installation de la version de PHP choisie <<<
     while true; do
-        echo -e "[${yellow}?${clear}] Confirmez-vous l'installation de PHP $php_version. Voulez-vous l'installer ? (O/N)"
+        echo -e "[${yellow}?${clear}] Confirmez-vous l'installation de PHP $php_version ? (O/N)"
         read confirm
-            if [[ "$confirm" =~ ^[Oo]$ ]]; then
-                #Installation des paquets libapache sinon erreur de dépendances par la suite pour le fonctionnement de LAMP
-                apt update && apt install -y $php_package libapache2-mod-php$php_version php$php_version-mysql
+        if [[ "$confirm" =~ ^[Oo]$ ]]; then
+            if apt update && apt install -y $php_package libapache2-mod-php$php_version php$php_version-mysql; then
                 echo -e "[${green}✔${clear}] PHP $php_version a été installé."
                 read -p "Appuyez sur Entrée pour continuer..."
-                break
-            elif [[ "$confirm" =~ ^[Nn]$ ]]; then
+            else
+                echo -e "[${red}!${clear}] Échec de l'installation de PHP $php_version."
+                read -p "Appuyez sur Entrée pour retourner au menu."
+                return 1
+            fi
+            break
+        elif [[ "$confirm" =~ ^[Nn]$ ]]; then
             echo -e "[${red}!${clear}] Installation de PHP interrompue. Arrêt du script."
             exit 1
-            else 
+        else 
             echo -e "[${red}!${clear}] Réponse invalide. Veuillez saisir O ou N."
-            fi
+        fi
     done
-fi
+    fi
 }
+
 
 function install_mysql() {
 clear
@@ -305,22 +310,28 @@ if apt list --installed 2>/dev/null | grep -Eo "mariadb-server|mysql-server" > /
 # >>> Installation de MySQL <<<
 else
     while true; do
-        echo -e "[${yellow}?${clear}] Confirmez-vous l'installation MySQL (mariadb) ? (O/N)"
+        echo -e "[${yellow}?${clear}] Confirmez-vous l'installation de MySQL (mariadb) ? (O/N)"
         read confirm
             if [[ "$confirm" =~ ^[Oo]$ ]]; then
-                apt update && apt install -y mariadb-server
-                systemctl enable mysql && systemctl start mysql
-                echo -e "[${green}✔${clear}] MySQL (MariaDB) a été installé et démarré."
-                read -p "Appuyez sur Entrée pour retourner au menu."
+                if apt update && apt install -y mariadb-server; then
+                    systemctl enable mysql && systemctl start mysql
+                    echo -e "[${green}✔${clear}] MySQL (MariaDB) a été installé et démarré."
+                    read -p "Appuyez sur Entrée pour retourner au menu."
+                else
+                    echo -e "[${red}!${clear}] Échec de l'installation de MySQL (MariaDB)."
+                    read -p "Appuyez sur Entrée pour retourner au menu."
+                    return 1
+                fi
                 break
             elif [[ "$confirm" =~ ^[Nn]$ ]]; then
-            echo -e "[${red}!${clear}] Installation de MySQL interrompue. Arrêt du script."
-            exit 1
+                echo -e "[${red}!${clear}] Installation de MySQL interrompue. Arrêt du script."
+                exit 1
             else 
-            echo -e "[${red}!${clear}] Réponse invalide. Veuillez saisir O ou N."
+                echo -e "[${red}!${clear}] Réponse invalide. Veuillez saisir O ou N."
             fi
-    done
-fi        
+        done
+    fi
+            
 }
 # >>>>>>>>> FIN FONCTIONS POUR SERVEUR LAMP <<<<<<<<<<
 
