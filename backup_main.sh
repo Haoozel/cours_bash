@@ -367,7 +367,7 @@ echo -e "${green}== Configuration de MySQL ==${clear}"
         if [[ "$confirm" =~ ^[Oo]$ ]]; then
         echo -e "[${blue}i${clear}] Entrez le nouveau mot de passe root pour MySQL/MariaDB :"
         read -s new_root_password
-            # Comme indiqué en commentaire plus haut, vérification si le mdp root est vide ou non. Puis commande différente en conséquence.
+            # Comme indiqué en commentaire plus haut, vérification si le mdp root est vide ou non. Puis commande différente en conséquence, même chose pour toutes les commandes MySQL plus bas.
             if [[ -z "$root_password" ]]; then
             mysql -u root -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '$new_root_password';"
             else
@@ -400,13 +400,14 @@ echo -e "${green}== Configuration de MySQL ==${clear}"
                         echo -e "[${red}!${clear}] Le nom de la base de données ne peut pas contenir de point. Veuillez réessayer."
                     
                     else
+                    # Comme indiqué en commentaire plus haut, vérification si le mdp root est vide ou non. Puis commande différente en conséquence.
                     if [[ -z "$root_password" ]]; then
                         mysql -u root -e "USE $db_name;" 2>/dev/null
                     else
                         mysql -u root -p"$root_password" -e "USE $db_name;" 2>/dev/null
                     fi
 
-                    # Check the result of the mysql command
+                    #Vérification si la base de données existe déjà
                     if [[ $? -eq 0 ]]; then
                         echo -e "[${red}!${clear}] La base de données '$db_name' existe déjà."
                     else
@@ -428,6 +429,7 @@ echo -e "${green}== Configuration de MySQL ==${clear}"
             
             read -p "Username : " db_user
             read -s -p "Password : " db_user_password
+            # Vérification si l'utilisateur existe déjà.
                 if [[ -z "$root_password" ]]; then
                     user_exists=$(mysql -u root -sN -e "SELECT EXISTS(SELECT 1 FROM mysql.user WHERE user = '$db_user' AND host = 'localhost');")
                 else
@@ -441,6 +443,7 @@ echo -e "${green}== Configuration de MySQL ==${clear}"
                 fi
             done
 
+            # Création de l'utilisateur et de la nouvelle base
 
             if [[ -z "$root_password" ]]; then
                 mysql -u root -e "CREATE USER '$db_user'@'localhost' IDENTIFIED BY '$db_user_password';"
@@ -469,9 +472,9 @@ echo -e "${green}== Configuration de MySQL ==${clear}"
 function check_mysql_root_password() {
     echo -e "[${blue}i${clear}] Vérification si le mot de passe root est défini pour MySQL..."
 
-    # Attempt to connect to MySQL without a password
+    # Tentative de connexion sans mot de passe
     if mysql -u root -sN -e "SELECT 1;" 2>/dev/null; then
-        root_password=""  # Set root password to null for future use
+        root_password=""  # Configuration à vide pour les prochaines boucles de vérification (permet de ne pas avoir le prompt de mysql pour un mot de passe vide dans le script)
         echo -e "[${green}✔${clear}] Aucun mot de passe root n'est défini pour MySQL."
         read -p "Appuyez sur Entrée pour continuer..."
 
@@ -481,7 +484,7 @@ function check_mysql_root_password() {
             echo -e "[${blue}i${clear}] Veuillez entrer le mot de passe root pour MySQL :"
             read -s root_password
 
-            # Validate the root password by attempting to connect
+            # Validation du mot de passe avec tentative de connexion.
             if mysql -u root -p"$root_password" -e "SELECT 1;" 2>/dev/null; then
                 echo -e "[${green}✔${clear}] Mot de passe root valide."
                 read -p "Appuyez sur Entrée pour continuer..."
@@ -519,7 +522,7 @@ echo -e "${green}== Mise à jour système ==${clear}"
 
 }
 
-# Détection de la distribution
+#>>> Détection de la distribution <<<
 function distro_info() {
     if [[ -f /etc/debian_version ]]; then
         distro="debian"
@@ -537,6 +540,7 @@ function distro_info() {
     echo -e "[${blue}i${clear}] Distribution détectée : $distro"
     echo -e ""
 
+# Vérification de la version actuelle et comparaison avec la dernière stable dispo. 
  if [[ "$distro" == "debian" ]]; then
         latest_version=$(curl -s https://www.debian.org/releases/stable/ | grep -oP 'Debian\s+\K\d+' | head -1)
             # Récupération de la version installée via lsb_release
@@ -551,14 +555,14 @@ function distro_info() {
             fi
 }
 
-
+# >>> Vérification de la version du kernel <<<
 function check_kernel_update() {
     current_kernel=$(uname -r)
     available_kernel=""
 
     case "$distro" in
         "debian")
-            apt update
+            echo -e [${blue}i${clear}]"Vérification des dépôts en cours, veuillez patienter..." && apt update -y -qq 2>/dev/null #MAJ des repo en cas de modiication manuelle, comme indiqué ligne 550.
             available_kernel=$(apt list --upgradable 2>/dev/null | grep "linux-image-generic" | awk '{print $2}')
             ;;
         "rhel")
@@ -569,6 +573,7 @@ function check_kernel_update() {
             ;;
     esac
 
+    # Reprise de la variable available_kernel, modifiée par le case ci-dessus si nouvelle version trouvée. Puis initialisation de la variable kernel_upgrade_available pour utilisation après.
     if [[ -z "$available_kernel" ]]; then
         kernel_upgrade_available=0
         log "[INFO] Le noyau est déjà à jour ($current_kernel)."
@@ -581,6 +586,8 @@ function check_kernel_update() {
         read -p "Appyez sur entrée pour continuer..."
     fi
 }
+
+# >>> Mise à jour des paquets <<< 
 
 function packages_upgrade() {
 
@@ -602,11 +609,12 @@ echo -e "[${yellow}?${clear}] Voulez-vous mettre à jour les paquets pour $distr
     done
 
 log "[INFO] Mise à jour des paquets pour $distro..."
+# Fonction à corriger si on veut l'utiliser pour une full upgrade car elle casse un peu tout dans le cadre d'une montée de version.
 echo -e "[${blue}!${clear}] Mise à jour des paquets en cours... Veuillez patienter."
 
     case "$distro" in
         "debian")
-            apt update -y >> "$LOG_FILE" 2>&1 || upgrade_error=1
+            apt update -y >> "$LOG_FILE" 2>&1 || upgrade_error=1 # Initialisation de la variable upgrade_error pour verbose en fin de fonction.
             apt upgrade -y >> "$LOG_FILE" 2>&1 || upgrade_error=1
             apt dist-upgrade -y >> "$LOG_FILE" 2>&1 || upgrade_error=1
             apt autoremove -y >> "$LOG_FILE" 2>&1
@@ -625,6 +633,7 @@ echo -e "[${blue}!${clear}] Mise à jour des paquets en cours... Veuillez patien
             ;;
     esac
 
+# Comme indiqué ci-dessus, utilisateur de la variable upgrade_error pour verbose
 if [[ "$upgrade_error" -eq 1 ]]; then
     log "[INFO] Mise à jour des paquets terminée."
     echo -e "[${red}!${clear}] La mise à jour s'est terminée avec des erreurs. Consultez le journal ${cyan}$LOG_FILE${clear} pour le détail."
@@ -636,6 +645,10 @@ else
     read -p "Appuyez sur entrée pour retourner au menu."
 fi
 }
+
+# >>> Mise à jour du noyau <<<
+
+# /!\ FONCTION PAS TESTÉE /!\ mais reprise du fonctionnement de la maj des paquets donc devrait fonctionner pareil en théorie. 
 
 function kernel_upgrade() {
 clear
