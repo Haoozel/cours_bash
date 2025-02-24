@@ -137,7 +137,7 @@ while true; do
     if [[ -d "$directory" ]]; then
         tmp_valid=false
         while [[ "$tmp_valid" == false ]]; do
-            echo -e "[${yellow}?${clear}] Vous souhaitez sauvegarder le répertoire ${cyan}$directory${clear} Voulez-vous continuer ? (O/N/L (L pour lister son contenu))"
+            echo -e "[${yellow}?${clear}] Vous souhaitez sauvegarder le répertoire ${cyan}$directory${clear}. Voulez-vous continuer ? (O/N/L (L pour lister son contenu))"
             read confirm
 
             #Listing du contenu si L saisi
@@ -147,7 +147,7 @@ while true; do
             elif [[ "$confirm" =~ ^[Oo]$ ]]; then
                 tmp_valid=true
             elif [[ "$confirm" =~ ^[Nn]$ ]]; then
-                echo -e "[${red}!${clear}] Suppression annulée."
+                echo -e "[${red}!${clear}] Sauvegarde annulée."
                 read -p "Appuyez sur Entrée pour retourner au menu."
                 return
             else
