@@ -504,7 +504,7 @@ echo -e "${green}== Mise à jour système ==${clear}"
 }
 
 # Détection de la distribution
-distro_info() {
+function distro_info() {
     if [[ -f /etc/debian_version ]]; then
         distro="debian"
     elif [[ -f /etc/redhat-release ]]; then
@@ -523,7 +523,7 @@ distro_info() {
 }
 
 
-check_kernel_update() {
+function check_kernel_update() {
     current_kernel=$(uname -r)
     available_kernel=""
 
@@ -552,7 +552,7 @@ check_kernel_update() {
     fi
 }
 
-packages_upgrade() {
+function packages_upgrade() {
 
 clear
 
