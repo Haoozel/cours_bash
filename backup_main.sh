@@ -279,10 +279,12 @@ else
         echo -e "[${yellow}?${clear}] Confirmez-vous l'installation de PHP $php_version ? (O/N)"
         read confirm
         if [[ "$confirm" =~ ^[Oo]$ ]]; then
+         #Installation des paquets libapache sinon erreur de dépendances par la suite pour le fonctionnement de LAMP
             if apt update && apt install -y $php_package libapache2-mod-php$php_version php$php_version-mysql; then
                 echo -e "[${green}✔${clear}] PHP $php_version a été installé."
                 read -p "Appuyez sur Entrée pour continuer..."
             else
+                # Contrôle d'erreurs au cas où il ne s'installe pas bien
                 echo -e "[${red}!${clear}] Échec de l'installation de PHP $php_version."
                 read -p "Appuyez sur Entrée pour retourner au menu."
                 return 1
@@ -318,6 +320,7 @@ else
                     echo -e "[${green}✔${clear}] MySQL (MariaDB) a été installé et démarré."
                     read -p "Appuyez sur Entrée pour retourner au menu."
                 else
+                    # Contrôle d'erreurs au cas où il ne s'installe pas bien
                     echo -e "[${red}!${clear}] Échec de l'installation de MySQL (MariaDB)."
                     read -p "Appuyez sur Entrée pour retourner au menu."
                     return 1
@@ -341,18 +344,20 @@ else
 # Permet d'exécuter sans l'opérateur -p quand il est vide, afin d'éviter la verbose de MySQL dans le script.
 function conf_mysql () {
 
-check_mysql_root_password
-
-clear
-
-echo -e "${green}== Configuration de MySQL ==${clear}"
-
 # Revérification que MySQL soit bien installé
     if ! apt list --installed 2>/dev/null | grep -Eo "mariadb-server|mysql-server" > /dev/null; then
         echo -e "[${red}!${clear}] MySQL/MariaDB n'est pas installé. Veuillez d'abord installer MySQL/MariaDB."
         read -p "Appuyez sur Entrée pour retourner au menu..."
         return
     fi
+
+check_mysql_root_password
+
+clear
+
+echo -e "${green}== Configuration de MySQL ==${clear}"
+
+
 
 # Requête pour changement du mot de passe root
 
@@ -531,6 +536,18 @@ function distro_info() {
     log "[INFO] Distribution détectée : $distro"
     echo -e "[${blue}i${clear}] Distribution détectée : $distro"
     echo -e ""
+
+ if [[ "$distro" == "debian" ]]; then
+        latest_version=$(curl -s https://www.debian.org/releases/latest | grep -oP 'Debian\s+\K\d+' | head -1)
+            # Récupération de la version installée via lsb_release
+            installed_version=$(lsb_release -r | awk '{print $2}')
+            echo "[${blue}i${clear}] Dernière version stable : Debian $latest_version"
+            echo "[${blue}i${clear}] Version actuelle installée : Debian $installed_version"
+            if [[ "$installed_version" != "$latest_version" ]]; then
+                echo -e "[${yellow}!${clear}] La version actuelle diffère de la dernière version stable. Veuillez mettre à jour les dépôts, puis relancer ce script pour mettre à jour le système."
+            else
+                echo -e ""
+            fi
 }
 
 
@@ -553,7 +570,7 @@ function check_kernel_update() {
     if [[ -z "$available_kernel" ]]; then
         kernel_upgrade_available=0
         log "[INFO] Le noyau est déjà à jour ($current_kernel)."
-        echo -e "[${blue}i${clear}] Le noyau est déjà à jour ($current_kernel)."
+        echo -e "[${blue}i${clear}] Le noyau est déjà à jour ($current_kernel) pour cette version."
         read -p "Appyez sur entrée pour continuer..."
     else
         kernel_upgrade_available=1
