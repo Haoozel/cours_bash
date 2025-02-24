@@ -1,4 +1,4 @@
-# Lamp installer
+# Bash script IPI Lyon.
 
 Made for school.
 
