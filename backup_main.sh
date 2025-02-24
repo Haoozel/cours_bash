@@ -72,7 +72,7 @@ if who | grep -wq "$login"; then
     # Proposer de tuer les processus de l'utilisateur, sauf root
     if [[ "$login" == "root" ]]; then
         echo -e "[${red}!${clear}] Impossible de tuer les processus de root pour éviter des risques système."
-        read -p "Appuyez sur Entrée pour continuer..."
+        read -p "Appuyez sur Entrée pour retourner au menu."
     else 
 
     # Boucle dans la boucle pour éviter les erreurs de saise (force O ou N)
@@ -90,16 +90,16 @@ if who | grep -wq "$login"; then
     if [[ "$confirm" =~ ^[Oo]$ ]]; then
             pkill -u "$login"
             echo -e "[${green}✔${clear}] Tous les processus de $login ont été arrêtés."
-            read -p "Appuyez sur Entrée pour continuer..."
+            read -p "Appuyez sur Entrée pour retourner au menu."
     else
         echo -e "[${blue}i${clear}] Aucune tâche n'a été tuée."
-        read -p "Appuyez sur Entrée pour continuer..."
+        read -p "Appuyez sur Entrée pour retourner au menu."
     fi
 fi
 
 else
     echo -e "[${red}!${clear}] L'utilisateur $login n'est pas connecté."
-    read -p "Appuyez sur Entrée pour continuer..."
+    read -p "Appuyez sur Entrée pour retourner au menu."
 fi
 }
 
@@ -115,10 +115,10 @@ clear
         echo -e "[${green}✔${clear}] L'utilisateur $login est présent dans /etc/passwd."
         user_groups=$(id -Gn "$login")
         echo -e "[${blue}i${clear}] L'utilisateur $login appartient aux groupes : ${green}$user_groups${clear}"
-        read -p "Appuyez sur Entrée pour continuer..."
+        read -p "Appuyez sur Entrée pour retourner au menu."
     else
         echo -e "[${red}!${clear}] L'utilisateur $login n'est pas présent dans /etc/passwd."
-        read -p "Appuyez sur Entrée pour continuer..."
+        read -p "Appuyez sur Entrée pour retourner au menu."
     fi
 }
 
@@ -157,7 +157,7 @@ while true; do
         # Création de l'archive et verbose
             tar -czf "$backup_path/$(basename "$directory")_backup_$(date +%Y-%m-%d_%H-%M).tar.gz" "$directory" &>/dev/null
             echo -e "[${green}✔${clear}] Sauvegarde de ${cyan}$directory${clear} effectuée dans ${cyan}$backup_path${clear}."
-            read -p "Appuyez sur Entrée pour continuer..."
+            read -p "Appuyez sur Entrée pour retourner au menu."
             break
         else
             echo -e "[${red}!${clear}] Le répertoire $directory n'existe pas."
@@ -311,7 +311,7 @@ else
                 apt update && apt install -y mariadb-server
                 systemctl enable mysql && systemctl start mysql
                 echo -e "[${green}✔${clear}] MySQL (MariaDB) a été installé et démarré."
-                read -p "Appuyez sur Entrée pour continuer..."
+                read -p "Appuyez sur Entrée pour retourner au menu."
                 break
             elif [[ "$confirm" =~ ^[Nn]$ ]]; then
             echo -e "[${red}!${clear}] Installation de MySQL interrompue. Arrêt du script."
@@ -438,11 +438,11 @@ echo -e "${green}== Configuration de MySQL ==${clear}"
 
             echo -e "[${green}✔${clear}] Base de données '$db_name' et utilisateur '$db_user' créés avec succès."
             echo -e "[${green}✔${clear}] L'utilisateur '$db_user' a tous les privilèges sur la base de données '$db_name'."
-            read -p "Appuyez sur Entrée pour continuer..."
+            read -p "Appuyez sur Entrée pour retourner au menu."
             break
         elif [[ "$confirm" =~ ^[Nn]$ ]]; then
             echo -e "[${red}!${clear}] Création de base de données et utilisateur ignorés."
-            read -p "Appuyez sur Entrée pour retourner au menu..."
+            read -p "Appuyez sur Entrée pour retourner au menu."
             return
         else
         echo -e "[${red}!${clear}] Réponse invalide. Veuillez saisir O ou N."
@@ -514,7 +514,7 @@ function distro_info() {
     else
         log "[ERROR] Distribution non prise en charge."
         echo -e "[${red}!${clear}] Distribution non prise en charge."
-        read -p "Appuyez sur Entrée pour continuer..."
+        read -p "Appuyez sur Entrée pour retourner au menu."
         return 1
     fi
     log "[INFO] Distribution détectée : $distro"
@@ -598,12 +598,12 @@ echo -e "[${blue}!${clear}] Mise à jour des paquets en cours... Veuillez patien
 if [[ "$upgrade_error" -eq 1 ]]; then
     log "[INFO] Mise à jour des paquets terminée."
     echo -e "[${red}!${clear}] La mise à jour s'est terminée avec des erreurs. Consultez le journal ${cyan}$LOG_FILE${clear} pour le détail."
-    read -p "Appuyez sur entrée pour continuer..."
+    read -p "Appuyez sur entrée pour retourner au menu."
 
 else
     log "[INFO] Mise à jour des paquets terminée."
     echo -e "[${green}✔${clear}] Mise à jour des paquets terminée. Vous pouvez consulter le journal dans le fichier ${cyan}$LOG_FILE${clear}."
-    read -p "Appuyez sur entrée pour continuer..."
+    read -p "Appuyez sur entrée pour retourner au menu."
 fi
 }
 
@@ -660,11 +660,11 @@ echo -e "[${blue}!${clear}] Mise à jour du noyau en cours... Veuillez patienter
 if [[ "$kernel_upgrade_error" -eq 1 ]]; then
     log "[INFO] Mise à jour des paquets terminée."
     echo -e "[${red}!${clear}] La mise à jour s'est terminée avec des erreurs. Consultez le journal ${cyan}$LOG_FILE${clear} pour le détail."
-    read -p "Appuyez sur entrée pour continuer..."
+    read -p "Appuyez sur entrée pour retourner au menu."
 else
     log "[INFO] Mise à jour du noyau terminée."
     echo -e "[${green}✔${clear}] Mise à jour du noyau terminée. Vous pouvez consulter le journal dans le fichier ${cyan}$LOG_FILE${clear}."
-    read -p "Appuyez sur entrée pour continuer..."
+    read -p "Appuyez sur entrée pour retourner au menu."
 fi
 }
 ################ FIN FONCTIONS ################
