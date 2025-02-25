@@ -28,6 +28,6 @@ Bash script that does various actions.
 - Make the script executable with 
 
 ```bash
-chmod +x lamp_install.sh
+chmod +x main.sh
 ```
 - Run the script as root
